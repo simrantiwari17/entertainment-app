@@ -15,13 +15,13 @@ const Navbar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
-  
+
   // Handle logout
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
   };
-  
+
   return (
     <nav className="bg-dark-light p-4 sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between">
@@ -29,49 +29,57 @@ const Navbar = () => {
         <Link to="/" className="text-2xl font-bold text-white hover:text-blue-400 transition">
           🎬 Entertainment App
         </Link>
-        
+
         {/* Navigation Links */}
         <div className="flex items-center space-x-6">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="text-white hover:text-blue-400 transition"
           >
             Home
           </Link>
-          <Link 
-            to="/movies" 
+          <Link
+            to="/movies"
             className="text-white hover:text-blue-400 transition"
           >
             Movies
           </Link>
-          <Link 
-            to="/tv" 
+          <Link
+            to="/tv"
             className="text-white hover:text-blue-400 transition"
           >
             TV Series
           </Link>
-          <Link 
-            to="/search" 
+          <Link
+            to="/search"
             className="text-white hover:text-blue-400 transition"
           >
             Search
           </Link>
-          <Link 
-            to="/suggest" 
+          <Link
+            to="/suggest"
             className="text-white hover:text-blue-400 transition"
           >
             Suggest
           </Link>
-          
+
           {/* Authentication Section */}
           {isAuthenticated ? (
             <>
-              <Link 
-                to="/bookmarks" 
+              <Link
+                to="/bookmarks"
                 className="text-white hover:text-blue-400 transition"
               >
                 Bookmarks
               </Link>
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin/dashboard"
+                  className="text-white hover:text-blue-400 transition"
+                >
+                  Admin
+                </Link>
+              )}
               <div className="flex items-center space-x-4">
                 <span className="text-dark-lighter">
                   {user?.name || user?.email}

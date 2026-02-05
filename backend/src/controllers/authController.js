@@ -30,7 +30,7 @@ const generateToken = (userId) => {
 export const signup = async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
-    
+
     // Validation: Check if required fields are provided
     if (!email || !password) {
       return res.status(400).json({
@@ -38,27 +38,27 @@ export const signup = async (req, res, next) => {
         message: 'Email and password are required'
       });
     }
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
-    
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
-    
+
     // Create new user (password will be hashed automatically by pre-save hook)
     const user = await User.create({
       email,
       password,
       name: name || undefined
     });
-    
+
     // Generate JWT token
     const token = generateToken(user._id);
-    
+
     // Send success response with token and user info (without password)
     res.status(201).json({
       success: true,
@@ -68,7 +68,8 @@ export const signup = async (req, res, next) => {
         user: {
           id: user._id,
           email: user.email,
-          name: user.name
+          name: user.name,
+          role: user.role
         }
       }
     });
@@ -86,7 +87,7 @@ export const signup = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    
+
     // Validation: Check if required fields are provided
     if (!email || !password) {
       return res.status(400).json({
@@ -94,10 +95,10 @@ export const login = async (req, res, next) => {
         message: 'Email and password are required'
       });
     }
-    
+
     // Find user by email
     const user = await User.findOne({ email });
-    
+
     // Check if user exists
     if (!user) {
       return res.status(401).json({
@@ -105,20 +106,20 @@ export const login = async (req, res, next) => {
         message: 'Invalid email or password'
       });
     }
-    
+
     // Compare provided password with hashed password in database
     const isPasswordValid = await user.comparePassword(password);
-    
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
-    
+
     // Generate JWT token
     const token = generateToken(user._id);
-    
+
     // Send success response with token and user info (without password)
     res.status(200).json({
       success: true,
@@ -128,7 +129,8 @@ export const login = async (req, res, next) => {
         user: {
           id: user._id,
           email: user.email,
-          name: user.name
+          name: user.name,
+          role: user.role
         }
       }
     });
@@ -137,6 +139,3 @@ export const login = async (req, res, next) => {
     next(error);
   }
 };
-
-
-

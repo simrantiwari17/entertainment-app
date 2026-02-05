@@ -17,6 +17,7 @@ import connectDB from './config/database.js';
 import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import bookmarkRoutes from './routes/bookmarkRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -29,10 +30,7 @@ connectDB();
 
 // Middleware
 // CORS: Allow requests from frontend (React app)
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors());
 
 // JSON parser: Parse JSON request bodies
 app.use(express.json());
@@ -52,6 +50,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler: Handle requests to undefined routes
 app.use('*', (req, res) => {

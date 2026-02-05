@@ -1,3 +1,8 @@
+# Admin
+
+username - admin
+email - admin@test.com
+password -  Admin@123
 # Entertainment Web App
 
 A complete, production-ready MERN stack Entertainment Web App that helps users discover movies and TV series and reduce decision fatigue by allowing them to search, browse, and bookmark content.

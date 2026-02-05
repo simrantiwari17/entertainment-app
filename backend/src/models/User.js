@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       trim: true
+    },
+    // User role for admin side (normal users vs admins)
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
     }
   },
   { timestamps: true }

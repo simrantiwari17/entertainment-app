@@ -16,7 +16,13 @@ import Suggest from './pages/Suggest';
 import Details from './pages/Details';
 import Bookmarks from './pages/Bookmarks';
 import Login from './pages/Login';
+
 import Signup from './pages/Signup';
+import AdminRoute from './components/AdminRoute';
+import AdminLayout from './components/AdminLayout';
+import Dashboard from './pages/admin/Dashboard';
+import Users from './pages/admin/Users';
+import { Navigate } from 'react-router-dom';
 
 function App() {
   return (
@@ -24,7 +30,7 @@ function App() {
       <div className="min-h-screen bg-dark">
         {/* Navigation Bar - visible on all pages */}
         <Navbar />
-        
+
         {/* Main Content */}
         <main>
           <Routes>
@@ -38,7 +44,7 @@ function App() {
             <Route path="/tv/:id" element={<Details />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
+
             {/* Protected Routes (require authentication) */}
             <Route
               path="/bookmarks"
@@ -48,10 +54,25 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Admin Routes (require auth + admin role) */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="users" element={<Users />} />
+              {/* Redirect /admin to /admin/dashboard */}
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
           </Routes>
         </main>
       </div>
-    </Router>
+    </Router >
   );
 }
 

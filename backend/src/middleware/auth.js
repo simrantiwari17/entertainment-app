@@ -44,8 +44,11 @@ const authenticate = async (req, res, next) => {
       });
     }
     
-    // Attach user ID to request object for use in controllers
-    req.user = { userId: decoded.userId };
+    // Attach user info to request object for use in controllers
+    req.user = {
+      userId: decoded.userId,
+      role: user.role
+    };
     
     // Move to next middleware/controller
     next();

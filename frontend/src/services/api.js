@@ -57,7 +57,7 @@ export const authAPI = {
     const response = await api.post('/auth/signup', { email, password, name });
     return response.data;
   },
-  
+
   // Login existing user
   login: async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
@@ -72,19 +72,19 @@ export const bookmarksAPI = {
     const response = await api.get('/bookmarks');
     return response.data;
   },
-  
+
   // Create new bookmark
   createBookmark: async (bookmarkData) => {
     const response = await api.post('/bookmarks', bookmarkData);
     return response.data;
   },
-  
+
   // Delete bookmark by ID
   deleteBookmark: async (bookmarkId) => {
     const response = await api.delete(`/bookmarks/${bookmarkId}`);
     return response.data;
   },
-  
+
   // Update bookmark notes/status
   updateBookmark: async (bookmarkId, updateData) => {
     const response = await api.put(`/bookmarks/${bookmarkId}`, updateData);
@@ -92,7 +92,25 @@ export const bookmarksAPI = {
   }
 };
 
+// Admin API calls
+export const adminAPI = {
+  // Get system stats
+  getStats: async () => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
+  // Get all users
+  getUsers: async () => {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+
+  // Delete user
+  deleteUser: async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+  }
+};
+
 export default api;
-
-
-
