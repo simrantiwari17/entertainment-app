@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { fetchBookmarks, deleteBookmark, updateBookmark } from '../redux/slices/bookmarksSlice';
 import { getImageUrl } from '../services/tmdb';
+import Spinner from '../components/Spinner';
 
 const Bookmarks = () => {
   const dispatch = useDispatch();
@@ -69,7 +70,7 @@ const Bookmarks = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <Spinner label="Loading bookmarks..." />
       </div>
     );
   }

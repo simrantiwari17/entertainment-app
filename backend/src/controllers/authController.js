@@ -8,6 +8,9 @@
 
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import Bookmark from '../models/Bookmark.js';
+import RecentlyViewed from '../models/RecentlyViewed.js';
+import https from 'https';
 
 /**
  * Generate JWT token for authenticated user
@@ -21,6 +24,28 @@ const generateToken = (userId) => {
     { expiresIn: '7d' } // Token expires in 7 days
   );
 };
+
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+
+const httpsJsonRequest = (url) =>
+  new Promise((resolve, reject) => {
+    const req = https.request(url, { method: 'GET', timeout: 10000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          resolve(data ? JSON.parse(data) : {});
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Request timeout')));
+    req.on('error', reject);
+    req.end();
+  });
 
 /**
  * @route   POST /api/auth/signup
@@ -107,6 +132,13 @@ export const login = async (req, res, next) => {
       });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is blocked. Please contact admin.'
+      });
+    }
+
     // Compare provided password with hashed password in database
     const isPasswordValid = await user.comparePassword(password);
 
@@ -137,5 +169,128 @@ export const login = async (req, res, next) => {
   } catch (error) {
     // Pass error to error handling middleware
     next(error);
+  }
+};
+
+/**
+ * @route   GET /api/auth/profile
+ * @desc    Get authenticated user profile
+ * @access  Private
+ */
+export const getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @route   PUT /api/auth/profile
+ * @desc    Update authenticated user profile
+ * @access  Private
+ */
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (email && email !== user.email) {
+      const exists = await User.findOne({ email });
+      if (exists) {
+        return res.status(400).json({ success: false, message: 'Email already in use' });
+      }
+      user.email = email;
+    }
+
+    if (name !== undefined) user.name = name;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @route   GET /api/auth/profile-summary
+ * @desc    Get user profile summary stats
+ * @access  Private
+ */
+export const getProfileSummary = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const [bookmarks, recentActivity] = await Promise.all([
+      Bookmark.find({ user: userId }).sort({ createdAt: -1 }).limit(12),
+      RecentlyViewed.find({ userId }).sort({ viewedAt: -1 }).limit(10)
+    ]);
+
+    const totalBookmarks = bookmarks.length;
+    const activitySummary = {
+      recentViews: recentActivity.length,
+      completedBookmarks: bookmarks.filter((item) => item.watchStatus === 'completed').length
+    };
+
+    const genreCountMap = {};
+    const apiKey = process.env.TMDB_API_KEY;
+
+    if (apiKey) {
+      const genrePromises = bookmarks.slice(0, 8).map(async (bookmark) => {
+        const endpoint = bookmark.contentType === 'tv' ? 'tv' : 'movie';
+        const data = await httpsJsonRequest(`${TMDB_BASE_URL}/${endpoint}/${bookmark.contentId}?api_key=${apiKey}`);
+        return Array.isArray(data?.genres) ? data.genres.map((genre) => genre.name) : [];
+      });
+
+      const genreLists = await Promise.allSettled(genrePromises);
+      genreLists.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          result.value.forEach((genreName) => {
+            genreCountMap[genreName] = (genreCountMap[genreName] || 0) + 1;
+          });
+        }
+      });
+    }
+
+    const favoriteGenres = Object.entries(genreCountMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalBookmarks,
+        favoriteGenres,
+        activitySummary
+      }
+    });
+  } catch (error) {
+    return next(error);
   }
 };

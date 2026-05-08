@@ -12,11 +12,13 @@ import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getImageUrl } from '../services/tmdb';
 import { createBookmark, deleteBookmark } from '../redux/slices/bookmarksSlice';
+import { useToast } from './ToastProvider';
 
 const ContentCard = ({ content, contentType = 'movie' }) => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { bookmarks } = useSelector((state) => state.bookmarks);
+  const { showToast } = useToast();
   
   // Check if this content is already bookmarked
   const isBookmarked = bookmarks.some(
@@ -35,13 +37,14 @@ const ContentCard = ({ content, contentType = 'movie' }) => {
     e.stopPropagation();
     
     if (!isAuthenticated) {
-      alert('Please login to bookmark content');
+      showToast('Please login to bookmark content', 'error');
       return;
     }
     
     if (isBookmarked) {
       // Delete bookmark
       await dispatch(deleteBookmark(bookmark._id));
+      showToast('Bookmark removed', 'success');
     } else {
       // Create bookmark
       await dispatch(
@@ -53,6 +56,7 @@ const ContentCard = ({ content, contentType = 'movie' }) => {
           releaseDate: content.release_date || content.first_air_date
         })
       );
+      showToast('Bookmark added', 'success');
     }
   };
   

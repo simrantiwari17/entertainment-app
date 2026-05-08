@@ -44,6 +44,11 @@ const Dashboard = () => {
                     <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Total Bookmarks</h3>
                     <p className="text-4xl text-white font-bold">{stats.totalBookmarks}</p>
                 </div>
+
+                <div className="bg-dark-light p-6 rounded-lg shadow-lg">
+                    <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Active Users (7 Days)</h3>
+                    <p className="text-4xl text-white font-bold">{stats.activeUsers || 0}</p>
+                </div>
             </div>
 
             {/* Recent Users */}
@@ -75,6 +80,15 @@ const Dashboard = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div className="bg-dark-light rounded-lg shadow-lg overflow-hidden mt-8">
+                <div className="p-6">
+                    <h2 className="text-xl text-white font-bold mb-2">Content Source</h2>
+                    <p className="text-gray-300">
+                        Content is fetched dynamically from TMDB API. Manual content management is disabled.
+                    </p>
                 </div>
             </div>
         </div>

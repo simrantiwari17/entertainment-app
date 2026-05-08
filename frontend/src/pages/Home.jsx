@@ -10,6 +10,9 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { tmdbService } from '../services/tmdb';
 import ContentCard from '../components/ContentCard';
+import RecentlyViewedSection from '../components/RecentlyViewedSection';
+import { recentAPI } from '../services/api';
+import Spinner from '../components/Spinner';
 
 const Home = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -17,6 +20,8 @@ const Home = () => {
   const [trendingTV, setTrendingTV] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
   
   useEffect(() => {
     // Fetch trending content when component mounts
@@ -37,11 +42,32 @@ const Home = () => {
     
     fetchTrending();
   }, []);
+
+  useEffect(() => {
+    const fetchRecentlyViewed = async () => {
+      setRecentLoading(true);
+      try {
+        if (isAuthenticated) {
+          const response = await recentAPI.list();
+          setRecentlyViewed((response?.data || []).slice(0, 5));
+        } else {
+          const guestItems = JSON.parse(localStorage.getItem('guest_recently_viewed') || '[]');
+          setRecentlyViewed(guestItems.slice(0, 5));
+        }
+      } catch (err) {
+        setRecentlyViewed([]);
+      } finally {
+        setRecentLoading(false);
+      }
+    };
+
+    fetchRecentlyViewed();
+  }, [isAuthenticated]);
   
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <Spinner label="Loading content..." />
       </div>
     );
   }
@@ -85,6 +111,15 @@ const Home = () => {
 
         {/* Page Title */}
         <h1 className="text-4xl font-bold text-white mb-8">Trending Now</h1>
+
+        <RecentlyViewedSection
+          items={recentlyViewed}
+          loading={recentLoading}
+          title="Recently Viewed"
+        />
+        {!recentLoading && recentlyViewed.length === 0 && (
+          <p className="text-dark-lighter mb-8">No recent activity.</p>
+        )}
         
         {/* Trending Movies Section */}
         <section className="mb-12">

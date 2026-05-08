@@ -9,12 +9,14 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearError } from '../redux/slices/authSlice';
+import { useToast } from '../components/ToastProvider';
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, error, user } = useSelector((state) => state.auth);
+  const { showToast } = useToast();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -24,9 +26,16 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      showToast('Login successful', 'success');
+      navigate(user?.role === 'admin' ? '/admin/dashboard' : '/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, showToast, user]);
+
+  useEffect(() => {
+    if (error) {
+      showToast(error, 'error');
+    }
+  }, [error, showToast]);
   
   // Clear error when component unmounts
   useEffect(() => {

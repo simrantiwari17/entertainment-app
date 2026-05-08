@@ -10,14 +10,17 @@
  * - Starts the server
  */
 
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import connectDB from './config/database.js';
-import errorHandler from './middleware/errorHandler.js';
-import authRoutes from './routes/authRoutes.js';
-import bookmarkRoutes from './routes/bookmarkRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
+import connectDB from './src/config/database.js';
+import errorHandler from './src/middleware/errorHandler.js';
+import authRoutes from './src/routes/authRoutes.js';
+import bookmarkRoutes from './src/routes/bookmarkRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
+import recentRoutes from './src/routes/recentRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +54,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/recent', recentRoutes);
+
+
 
 // 404 handler: Handle requests to undefined routes
 app.use('*', (req, res) => {
@@ -64,10 +71,25 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Get port from environment variables or use default
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+const startServer = (port) => {
+  const server = app.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      const nextPort = port + 1;
+      console.warn(`⚠️ Port ${port} is busy. Trying port ${nextPort}...`);
+      startServer(nextPort);
+      return;
+    }
+
+    throw error;
+  });
+};
+
+// Start server with automatic port fallback
+startServer(DEFAULT_PORT);

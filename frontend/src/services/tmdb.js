@@ -53,7 +53,7 @@ export const tmdbService = {
         tmdbAPI.get(`/trending/movie/${timeWindow}`),
         tmdbAPI.get(`/trending/tv/${timeWindow}`)
       ]);
-      
+
       return {
         movies: moviesResponse.data.results,
         tvShows: tvResponse.data.results
@@ -63,7 +63,7 @@ export const tmdbService = {
       throw error;
     }
   },
-  
+
   /**
    * Get popular movies
    * @param {number} page - Page number (default: 1)
@@ -78,7 +78,7 @@ export const tmdbService = {
       throw error;
     }
   },
-  
+
   /**
    * Get popular TV shows
    * @param {number} page - Page number (default: 1)
@@ -93,7 +93,7 @@ export const tmdbService = {
       throw error;
     }
   },
-  
+
   /**
    * Search movies and TV shows
    * @param {string} query - Search query
@@ -111,7 +111,7 @@ export const tmdbService = {
       throw error;
     }
   },
-  
+
   /**
    * Get movie details by ID
    * @param {number} movieId - TMDB movie ID
@@ -126,7 +126,7 @@ export const tmdbService = {
       throw error;
     }
   },
-  
+
   /**
    * Get TV show details by ID
    * @param {number} tvId - TMDB TV show ID
@@ -178,6 +178,20 @@ export const tmdbService = {
   },
 
   /**
+   * Get similar titles for movie/tv details page
+   */
+  getSimilar: async (type, id, page = 1) => {
+    try {
+      const endpoint = type === 'movie' ? `/movie/${id}/similar` : `/tv/${id}/similar`;
+      const response = await tmdbAPI.get(endpoint, { params: { page } });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching similar content:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Discover movies by genre and optional runtime (for mood + time suggestions)
    * @param {Object} params - { genreIds: string, runtimeGte: number, runtimeLte: number, page: number }
    * @returns {Promise<Object>} Discover response with results array
@@ -211,6 +225,68 @@ export const tmdbService = {
       console.error('Error discovering TV:', error);
       throw error;
     }
+  },
+
+  /**
+   * Discover movies with advanced filters (language, year, rating, runtime, genre, sort)
+   */
+  discoverMoviesAdvanced: async ({
+    page = 1,
+    sortBy = 'popularity.desc',
+    language,
+    genreIds,
+    ratingGte,
+    ratingLte,
+    voteCountGte,
+    runtimeGte,
+    runtimeLte,
+    year
+  } = {}) => {
+    try {
+      const params = { page, sort_by: sortBy, include_adult: false };
+      if (language) params.with_original_language = language;
+      if (genreIds && genreIds.length) params.with_genres = genreIds.join(',');
+      if (ratingGte != null) params['vote_average.gte'] = ratingGte;
+      if (ratingLte != null) params['vote_average.lte'] = ratingLte;
+      if (voteCountGte != null) params['vote_count.gte'] = voteCountGte;
+      if (runtimeGte != null) params['with_runtime.gte'] = runtimeGte;
+      if (runtimeLte != null) params['with_runtime.lte'] = runtimeLte;
+      if (year) params.primary_release_year = year;
+      const response = await tmdbAPI.get('/discover/movie', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error discovering filtered movies:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Discover TV with advanced filters (language, first air year, rating, genre, sort)
+   */
+  discoverTVAdvanced: async ({
+    page = 1,
+    sortBy = 'popularity.desc',
+    language,
+    genreIds,
+    ratingGte,
+    ratingLte,
+    voteCountGte,
+    year
+  } = {}) => {
+    try {
+      const params = { page, sort_by: sortBy, include_adult: false };
+      if (language) params.with_original_language = language;
+      if (genreIds && genreIds.length) params.with_genres = genreIds.join(',');
+      if (ratingGte != null) params['vote_average.gte'] = ratingGte;
+      if (ratingLte != null) params['vote_average.lte'] = ratingLte;
+      if (voteCountGte != null) params['vote_count.gte'] = voteCountGte;
+      if (year) params.first_air_date_year = year;
+      const response = await tmdbAPI.get('/discover/tv', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error discovering filtered TV:', error);
+      throw error;
+    }
   }
 };
 
@@ -230,4 +306,5 @@ export const TIME_PRESETS = {
   '1hour': { runtimeGte: 45, runtimeLte: 105, label: '1 hour', contentType: 'movie' },
   'binge': { label: 'Weekend binge', contentType: 'tv' }
 };
+
 

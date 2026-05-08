@@ -1,3 +1,6 @@
+⚠️ Note: Due to regional ISP restrictions on the TMDB API, live data may not load in some locations. 
+A demo video is provided to showcase full functionality.
+
 # API Documentation
 
 ## Base URL

@@ -10,6 +10,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { tmdbService, getImageUrl, getBackdropUrl } from '../services/tmdb';
 import { createBookmark, updateBookmark, deleteBookmark } from '../redux/slices/bookmarksSlice';
+import { recentAPI } from '../services/api';
 
 const Details = () => {
   const { id } = useParams();
@@ -31,6 +32,7 @@ const Details = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [videos, setVideos] = useState(null);
   const [watchProviders, setWatchProviders] = useState(null);
+  const [similarTitles, setSimilarTitles] = useState([]);
   
   // Find if this content is bookmarked
   const bookmark = bookmarks.find(
@@ -76,6 +78,19 @@ const Details = () => {
     };
     fetchWatchData();
   }, [content, isAuthenticated, id, type]);
+
+  useEffect(() => {
+    const fetchSimilarTitles = async () => {
+      try {
+        const response = await tmdbService.getSimilar(type, id, 1);
+        setSimilarTitles((response?.results || []).slice(0, 8));
+      } catch (err) {
+        setSimilarTitles([]);
+      }
+    };
+
+    fetchSimilarTitles();
+  }, [id, type]);
   
   useEffect(() => {
     // Set notes and watch status from bookmark if it exists
@@ -84,6 +99,31 @@ const Details = () => {
       setWatchStatus(bookmark.watchStatus || 'planned');
     }
   }, [bookmark]);
+
+  useEffect(() => {
+    if (!content) return;
+
+    const payload = {
+      tmdbId: Number(content.id),
+      type,
+      title: content.title || content.name,
+      poster: content.poster_path || null
+    };
+
+    if (isAuthenticated) {
+      recentAPI.add(payload).catch(() => {
+        // Avoid blocking details page on tracking failure
+      });
+    } else {
+      const key = 'guest_recently_viewed';
+      const previous = JSON.parse(localStorage.getItem(key) || '[]');
+      const deduped = previous.filter(
+        (entry) => !(entry.tmdbId === payload.tmdbId && entry.type === payload.type)
+      );
+      const updated = [{ ...payload, viewedAt: new Date().toISOString() }, ...deduped].slice(0, 10);
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  }, [content, isAuthenticated, type]);
   
   // Handle bookmark toggle
   const handleBookmarkToggle = async () => {
@@ -439,6 +479,39 @@ const Details = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Because You Liked This */}
+        <div className="mt-10">
+          <h2 className="text-2xl font-semibold text-white mb-4">Because You Liked This</h2>
+          {similarTitles.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
+              {similarTitles.map((item) => (
+                <Link
+                  key={item.id}
+                  to={item.title ? `/movie/${item.id}` : `/tv/${item.id}`}
+                  className="bg-dark-light rounded-lg overflow-hidden hover:scale-105 transition-transform"
+                >
+                  {item.poster_path ? (
+                    <img
+                      src={getImageUrl(item.poster_path)}
+                      alt={item.title || item.name}
+                      className="w-full h-56 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-56 bg-dark flex items-center justify-center text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <p className="text-white text-sm line-clamp-2">{item.title || item.name}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-dark-lighter">No similar titles available right now.</p>
+          )}
         </div>
       </div>
     </div>

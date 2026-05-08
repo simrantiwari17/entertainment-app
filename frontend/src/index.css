@@ -19,6 +19,34 @@ body {
   color: #FFFFFF;
 }
 
+/* Light theme overrides */
+html.light-theme body {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+html.light-theme .bg-dark {
+  background-color: #f3f4f6 !important;
+}
+
+html.light-theme .bg-dark-light {
+  background-color: #ffffff !important;
+}
+
+html.light-theme .text-white {
+  color: #111827 !important;
+}
+
+html.light-theme .text-dark-lighter,
+html.light-theme .text-gray-300,
+html.light-theme .text-gray-400 {
+  color: #4b5563 !important;
+}
+
+html.light-theme .border-dark-lighter {
+  border-color: #d1d5db !important;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
