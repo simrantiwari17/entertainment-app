@@ -16,6 +16,14 @@ const errorHandler = (err, req, res, next) => {
   // Log error for debugging
   console.error('Error:', err);
   
+  if (err.statusCode && err.statusCode >= 400 && err.statusCode < 600) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message || 'Request failed',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  }
+
   // Default error status code
   let statusCode = err.statusCode || 500;
   

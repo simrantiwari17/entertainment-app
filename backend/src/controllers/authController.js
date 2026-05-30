@@ -10,7 +10,7 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import Bookmark from '../models/Bookmark.js';
 import RecentlyViewed from '../models/RecentlyViewed.js';
-import https from 'https';
+import { getMovieDetails, getTVDetails } from '../services/tmdbService.js';
 
 /**
  * Generate JWT token for authenticated user
@@ -24,28 +24,6 @@ const generateToken = (userId) => {
     { expiresIn: '7d' } // Token expires in 7 days
   );
 };
-
-const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
-
-const httpsJsonRequest = (url) =>
-  new Promise((resolve, reject) => {
-    const req = https.request(url, { method: 'GET', timeout: 10000 }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        try {
-          resolve(data ? JSON.parse(data) : {});
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-    req.on('timeout', () => req.destroy(new Error('Request timeout')));
-    req.on('error', reject);
-    req.end();
-  });
 
 /**
  * @route   POST /api/auth/signup
@@ -258,13 +236,20 @@ export const getProfileSummary = async (req, res, next) => {
     };
 
     const genreCountMap = {};
-    const apiKey = process.env.TMDB_API_KEY;
 
-    if (apiKey) {
+    if (process.env.TMDB_API_KEY) {
       const genrePromises = bookmarks.slice(0, 8).map(async (bookmark) => {
-        const endpoint = bookmark.contentType === 'tv' ? 'tv' : 'movie';
-        const data = await httpsJsonRequest(`${TMDB_BASE_URL}/${endpoint}/${bookmark.contentId}?api_key=${apiKey}`);
-        return Array.isArray(data?.genres) ? data.genres.map((genre) => genre.name) : [];
+        try {
+          const data =
+            bookmark.contentType === 'tv'
+              ? await getTVDetails(bookmark.contentId)
+              : await getMovieDetails(bookmark.contentId);
+          return Array.isArray(data?.genres)
+            ? data.genres.map((genre) => genre.name)
+            : [];
+        } catch {
+          return [];
+        }
       });
 
       const genreLists = await Promise.allSettled(genrePromises);

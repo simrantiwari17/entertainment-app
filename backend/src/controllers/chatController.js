@@ -1,13 +1,8 @@
 /**
- * Chat Controller
- *
- * Handles chatbot requests and returns movie/TV suggestions
- * based on simple keyword detection + TMDB API results.
+ * Chat Controller — movie/TV suggestions via shared TMDB service
  */
 
-import https from 'https';
-
-const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+import { fetchTmdbList } from '../services/tmdbService.js';
 
 const GENRE_KEYWORDS = {
   action: 28,
@@ -15,51 +10,6 @@ const GENRE_KEYWORDS = {
   romance: 10749,
   thriller: 53
 };
-
-const clearProxyEnv = () => {
-  process.env.HTTP_PROXY = '';
-  process.env.HTTPS_PROXY = '';
-  process.env.http_proxy = '';
-  process.env.https_proxy = '';
-  process.env.ALL_PROXY = '';
-  process.env.all_proxy = '';
-  process.env.NO_PROXY = '*';
-  process.env.no_proxy = '*';
-};
-
-const httpsJsonRequest = (url) =>
-  new Promise((resolve, reject) => {
-    const req = https.request(
-      url,
-      {
-        method: 'GET',
-        timeout: 15000,
-        agent: new https.Agent({ keepAlive: true })
-      },
-      (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          try {
-            const parsed = data ? JSON.parse(data) : {};
-            if (res.statusCode >= 200 && res.statusCode < 300) {
-              resolve(parsed);
-            } else {
-              reject(new Error(`TMDB request failed with status ${res.statusCode}`));
-            }
-          } catch (error) {
-            reject(error);
-          }
-        });
-      }
-    );
-
-    req.on('timeout', () => req.destroy(new Error('Request timeout')));
-    req.on('error', reject);
-    req.end();
-  });
 
 const getKeywordType = (message) => {
   const text = message.toLowerCase();
@@ -85,27 +35,14 @@ const getKeywordType = (message) => {
   return null;
 };
 
-const mapResults = (items = []) => {
-  return items.slice(0, 5).map((item) => ({
+const mapResults = (items = []) =>
+  items.slice(0, 5).map((item) => ({
     id: item.id,
     title: item.title || item.name || 'Unknown Title',
     rating: item.vote_average ?? 0,
     description: item.overview || 'No description available.',
     type: item.media_type || (item.title ? 'movie' : 'tv')
   }));
-};
-
-const fetchTMDB = async (endpoint, params = {}) => {
-  clearProxyEnv();
-  const apiKey = process.env.TMDB_API_KEY;
-  if (!apiKey) {
-    throw new Error('TMDB_API_KEY is missing in environment variables');
-  }
-
-  const query = new URLSearchParams({ api_key: apiKey, ...params });
-  const data = await httpsJsonRequest(`${TMDB_BASE_URL}${endpoint}?${query.toString()}`);
-  return data?.results || [];
-};
 
 /**
  * @route   POST /api/chat
@@ -151,7 +88,7 @@ export const chatWithBot = async (req, res, next) => {
       responseMessage = 'Here are some popular movies right now.';
     }
 
-    const tmdbResults = await fetchTMDB(endpoint, params);
+    const tmdbResults = await fetchTmdbList(endpoint, params);
     const results = mapResults(tmdbResults);
 
     return res.status(200).json({

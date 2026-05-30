@@ -21,6 +21,8 @@ import bookmarkRoutes from './src/routes/bookmarkRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import chatRoutes from './src/routes/chatRoutes.js';
 import recentRoutes from './src/routes/recentRoutes.js';
+import tmdbRoutes from './src/routes/tmdbRoutes.js';
+import { verifyTmdbConnection } from './src/services/tmdbService.js';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +53,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/tmdb', tmdbRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/admin', adminRoutes);
@@ -77,6 +80,7 @@ const startServer = (port) => {
   const server = app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    verifyTmdbConnection();
   });
 
   server.on('error', (error) => {
